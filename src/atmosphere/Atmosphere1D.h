@@ -93,6 +93,9 @@ namespace NCPA {
 		*/
 		void add_property( std::string key, double value, units_t units = NCPA::UNITS_NONE );
 
+		void copy_vector_property( std::string old_key, std::string new_key );
+		void copy_scalar_property( std::string old_key, std::string new_key );
+
 		/**
 		Removes a scalar or vector property from the atmosphere.  Has no effect if the property does not exist.
 		@brief Removes a property.
@@ -136,7 +139,7 @@ namespace NCPA {
 		void calculate_wind_component( std::string new_key, std::string wind_speed_key, std::string wind_direction_key, 
 			double azimuth );
 		void calculate_effective_sound_speed( std::string new_key, std::string sound_speed_key, std::string wind_component_key );
-
+		void read_attenuation_from_file( std::string new_key, std::string filename );
 		
 
 		void convert_altitude_units( units_t new_units );

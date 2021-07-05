@@ -22,30 +22,29 @@ void NCPA::configure_modbb_parameter_set( NCPA::ParameterSet *ps ) {
 	ps->addHeaderTextVerbatim( "----------------------------------------------------------------------------" );	
  	ps->addBlankHeaderLine();
 	
-
-
-
-
-
-
-
-
-	ps->addHeaderText("By default the program computes the 1D transmission loss (TL) at the ground or the specified receiver height and saves the data to 2 files:" );
-	ps->setHeaderIndent( 4 );
-	ps->addHeaderText("file tloss_1d.nm - considering attenuation in the atmosphere" );
-	ps->addHeaderText("file tloss_1d.lossless.nm  - no attenuation" );
-	ps->resetHeaderIndent();
-	ps->addHeaderText("Additionally, if the flag --write_2D_TLoss is present on the command line, the 2D TL is saved to file tloss2d.nm. The user can also choose to propagate in N different directions i.e. (N by 2D mode) by using the option --Nby2Dprop.");
+ 	ps->addHeaderText( "One of two algorithms can be used to perform pulse propagation.  The first is based on the Effective Sound Speed Approximation (as in Modess), the second is based on the the Wide_Angle High-Mach solution of the wave equation (as in WMod).  Modess is faster but is accurate for launch angles less than 30 degrees and low wind speeds.  WMod extends the validity to higher angles and high Mach numbers, but is slower.");
+ 	ps->addHeaderText( "To propagate a pulse, two steps must be completed:" );
+ 	ps->addHeaderText( "1. A dispersion file must be calculated using the option --dispersion ." );
+ 	ps->addHeaderText( "2. Pulse propagation is calculated for a selected source type: " );
+ 	ps->setHeaderIndent( 2 );
+ 	ps->addHeaderText( "--source impulse                           : Delta function" );
+ 	ps->addHeaderText( "--source pulse1                            : Built-in pulse type 1" );
+ 	ps->addHeaderText( "--source pulse2                            : Built-in pulse type 2" );
+ 	ps->addHeaderText( "--source spectrum --source_file <filename> : User-supplied spectrum file" );
+ 	ps->addHeaderText( "    Format: Freq   Re[ spec(f) ]  Im[ spec(f) ]" );
+ 	ps->addHeaderText( "--source waveform --source_file <filename> : User-supplied waveform file" );
+ 	ps->addHeaderText( "    Format: Time   Amplitude" );
+ 	ps->resetHeaderIndent();
 	ps->addBlankHeaderLine();
-	ps->addHeaderText("The options below can be specified in a colon-separated file \"modess.param\" or at the command line. Command-line options override file options.");
+	ps->addHeaderText("The options below can be specified in a colon-separated file \"modbb.param\" or at the command line. Command-line options override file options.");
 
 	// Parameter descriptions
 	ps->addParameter( new FlagParameter( "help" ) );
 	ps->addParameter( new FlagParameter( "h" ) );
 	ps->addParameterDescription( "Options Control", "--help", "Prints help test" );
 
-	ps->addParameter( new StringParameter( "paramfile", "modess.param") );
-	ps->addParameterDescription( "Options Control", "--paramfile", "Parameter file name [modess.param]" );
+	ps->addParameter( new StringParameter( "paramfile", "modbb.param") );
+	ps->addParameterDescription( "Options Control", "--paramfile", "Parameter file name [modbb.param]" );
 
 	ps->addParameter( new FlagParameter( "printparams" ) );
 	ps->addParameterDescription( "Options Control", "--printparams", "Print parameter summary to screen" );
@@ -134,10 +133,10 @@ void NCPA::configure_modbb_parameter_set( NCPA::ParameterSet *ps ) {
 	ps->addParameterDescription( "Modes of Operation", "--ground_impedence_model", "Impedence model to use.  Currently only \"rigid\" is supported. [rigid]" );
 
 	ps->addParameter( new NCPA::FlagParameter( "Lamb_wave_BC" ) );
-	ps->addParameterDescription( "Flags", "--Lamb_wave_BC", "Use admittance = -1/2*dln(rho)/dz" );
+	ps->addParameterDescription( "Modes of Operation", "--Lamb_wave_BC", "Use admittance = -1/2*dln(rho)/dz" );
 
 	ps->addParameter( new NCPA::FlagParameter( "write_atm_profile" ) );
-	ps->addParameterDescription( "Flags", "--write_atm_profile", "Output atmospheric profile to atm_profile.nm" );
+	ps->addParameterDescription( "Modes of Operation", "--write_atm_profile", "Output atmospheric profile to atm_profile.nm" );
 
 	ps->addParameter( new NCPA::StringParameter( "use_attn_file", "" ) );
 	ps->addParameterDescription( "Modes of Operation", "--use_attn_file", "File name containing attenuation, to override default Sutherland/Bass [n/a]. Columns are #n# Height(km) Attenuation(np/m)" );
@@ -222,30 +221,21 @@ void NCPA::configure_modbb_parameter_set( NCPA::ParameterSet *ps ) {
 	// and others, but apparently can't do it with exceptions b/c clang.  Second-order problem
 	// to solve.
 	ps->addParameter( new NCPA::StringParameter( "modal_starter_file", "" ) );
-	ps->addParameter( new NCPA::FlagParameter( "write_2D_TLoss" ) );
+	ps->addParameter( new NCPA::FlagParameter( "write_2d_tloss" ) );
 	ps->addParameter( new NCPA::FlagParameter( "write_phase_speeds" ) );
 	ps->addParameter( new NCPA::FlagParameter( "write_speeds" ) );
 	ps->addParameter( new NCPA::FlagParameter( "write_modes" ) );
-	ps->addParameter( new NCPA::FlagParameter( "Nby2Dprop" ) );
+	ps->addParameter( new NCPA::FlagParameter( "multiprop" ) );
 	ps->addParameter( new NCPA::FlagParameter( "turnoff_WKB" ) );
 
 	// Footer with file formats and sample commands
 	ps->addBlankFooterLine();
-	// ps->addFooterText("OUTPUT Files:  Format description (column order):");
-	// ps->addFooterTextVerbatim("  tloss_1d.nm:                 r, 4*PI*Re(P), 4*PI*Im(P), (incoherent TL)");
-	// ps->addFooterTextVerbatim("  tloss_1d.lossless.nm:");
-	// ps->addFooterTextVerbatim("  tloss_2d.nm:                 r, z, 4*PI*Re(P), 4*PI*Im(P)");
-	// ps->addFooterTextVerbatim("  Nby2D_tloss_1d.nm:");
-	// ps->addFooterTextVerbatim("  Nby2D_tloss_1d.lossless.nm:  r, theta, 4*PI*Re(P), 4*PI*Im(P), (incoherent TL)");
-	// ps->addFooterTextVerbatim("  phasespeeds.nm:              Mode#, phase speed [m/s], imag(k)");
-	// ps->addFooterTextVerbatim("  speeds.nm:                   Mode#, phase speed [m/s], group speed [m/s], imag(k)");
-	// ps->addFooterTextVerbatim("  mode_<mode_count>.nm         z, (Mode amplitude)");
-	// ps->addFooterTextVerbatim("  dispersion_<freq>.nm         Contains one line with entries:");
-	// ps->addFooterTextVerbatim("                               freq, (# of modes), rho(z_src),");
-	// ps->addFooterTextVerbatim("                               followed for each mode 'i' by quadruples:");
-	// ps->addFooterTextVerbatim("                               real(k(i)), imag(k(i)), Mode(i)(z_src), Mode(i)(z_rcv)");
-	// ps->addFooterTextVerbatim("  atm_profile.nm               z,u,v,w,t,d,p,c,c_eff");
-	// ps->addBlankFooterLine();
+	ps->addFooterText("OUTPUT Files:  Format description (column order):");
+	ps->addFooterTextVerbatim("  <dispersion file>        Contains one line per frequency with entries:");
+	ps->addFooterTextVerbatim("                           freq, (# of modes), rho(z_src),");
+	ps->addFooterTextVerbatim("                           followed for each mode 'i' by quadruples:");
+	ps->addFooterTextVerbatim("                           real(k(i)), imag(k(i)), Mode(i)(z_src), Mode(i)(z_rcv)");
+	ps->addFooterTextVerbatim("  <waveform file>          r[km]  t[s]  P" );
 	ps->addFooterText("Examples (run from 'samples' directory):");
 	ps->setFooterIndent( 4 );
 	ps->setFooterHangingIndent( 4 );
